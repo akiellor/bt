@@ -12,21 +12,22 @@ opts = Trollop::options do
 Builds ready stages until there aren't any.
 
 Usage:
-\tbt-go
+\tbt-go [DIRECTORY]
   EOS
   opt :debug, 'Debugging text scrolls'
   opt :once, 'Build only the next ready stage'
   opt :commit, 'Build the specified commit', :default => 'HEAD'
-  opt :directory, 'Change to DIRECTORY before doing anything.', :short => :c, :type => :string, :default => Dir.pwd
 end
+
+directory = ARGV.shift || Dir.pwd
 
 Grit.debug = true if opts[:debug]
 
-r = BT::Repository.new opts[:directory]
+r = BT::Repository.new directory
 
 commit = r.commit(opts[:commit])
 
-stage_definition = YAML.load(`#{find_command :stages} --commit #{opts[:commit]} "#{opts[:directory]}"`)
+stage_definition = YAML.load(`#{find_command :stages} --commit #{opts[:commit]} "#{directory}"`)
 
 pipeline = BT::Pipeline.new commit, stage_definition
 
