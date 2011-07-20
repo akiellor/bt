@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+
+require 'bt'
+require 'trollop'
+
+include BT::Cli
+
+opts = Trollop::options do
+  banner <<-EOS
+Creates a local bare repository from a remote or local and synchronises refs.
+
+Usage:
+\tbt-sync [URI|DIRECTORY]
+  EOS
+  opt :mirror, 'Mirror the specified repository.'
+end
+
+repository = ARGV.shift || Dir.pwd
+
+repo = opts[:mirror] ? BT::Repository.mirror(repository) : BT::Repository.new(repository)
+
+repo.update
+repo.push
+
+puts repo.path

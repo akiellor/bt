@@ -2,6 +2,35 @@ require 'eventmachine'
 require 'bt/cli'
 require 'andand'
 
+class LocalRepository
+  include BT::Cli
+
+  def initialize repo
+    @path = `#{find_command :sync} --mirror "#{repo}"`.chomp
+    @synchronised_callbacks = []
+  end
+
+  def synchronised &block
+    @synchronised_callbacks << block
+  end
+
+  def sync
+    EM.popen("#{find_command :sync} \"#{@path}\"", Process, @synchronised_callbacks)
+  end
+
+  class Process < EM::Connection
+    def initialize callbacks
+      @callbacks = callbacks
+    end
+
+    def receive_data data
+      (@buffer ||= BufferedTokenizer.new).extract(data).each do |line|
+        @callbacks.each { |c| c.call line }
+      end
+    end
+  end
+end
+
 class Ready
   include BT::Cli
 

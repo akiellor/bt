@@ -1,4 +1,5 @@
 module BT
+
   require 'andand'
   require 'forwardable'
   require 'grit'
@@ -42,13 +43,12 @@ module BT
   class Repository < Struct.new(:path)
     # TODO: Mirror is not the right word.
     def self.mirror uri, &block
-      Dir.mktmpdir(['bt', '.git']) do |tmp_dir|
-        repo = Grit::Repo.new(tmp_dir).fork_bare_from uri, :timeout => false
-        Mirror.new repo.path do |m|
-          m.configure_remote_fetch 'origin', "+refs/heads/*:refs/heads/*"
-          m.configure_remote_fetch 'origin', "+#{Ref.prefix}/*:#{Ref.prefix}/*"
-          block.call m
-        end
+      tmp_dir = Dir.mktmpdir(['bt', '.git'])
+      repo = Grit::Repo.new(tmp_dir).fork_bare_from uri, :timeout => false
+      new repo.path do |m|
+        m.configure_remote_fetch 'origin', "+refs/heads/*:refs/heads/*"
+        m.configure_remote_fetch 'origin', "+#{Ref.prefix}/*:#{Ref.prefix}/*"
+        yield m if block_given?
       end
     end
 
@@ -102,6 +102,25 @@ module BT
       @repo.git.config({:raise => true}, '--add', "remote.#{name}.fetch", refspec)
     end
 
+    def update
+      git.fetch({:raise => true, :timeout => false}, 'origin')
+    end
+
+    def push
+      # todo: this should probably throw an exception.
+      #
+      # this is a general failure right now.
+      #
+      # but what if we just lost network connectivity?
+      begin
+        git.push({:raise => true }, 'origin', "#{Ref.prefix}/*")
+
+        true
+      rescue Grit::Git::CommandFailed
+        false
+      end
+    end
+
     private
 
     # Temporary: fix Grit or go home.
@@ -117,27 +136,6 @@ module BT
 
     def refs
       Ref.find_all(@repo)
-    end
-
-    class Mirror < Repository
-      def update
-        git.fetch({:raise => true, :timeout => false}, 'origin')
-      end
-
-      def push
-        # TODO: This should probably throw an exception.
-        #
-        # This is a general failure right now.
-        #
-        # But what if we just lost network connectivity?
-        begin
-          git.push({:raise => true }, 'origin', "#{Ref.prefix}/*")
-
-          true
-        rescue Grit::Git::CommandFailed
-          false
-        end
-      end
     end
 
     class WorkingTree < Repository
