@@ -15,13 +15,20 @@ Usage:
 \tbt-sync [URI|DIRECTORY]
   EOS
   opt :mirror, 'Mirror the specified repository.'
+  opt :done_with, 'Remove temporary repository.'
+
+  conflicts :mirror, :done_with
 end
 
 repository = ARGV.shift || Dir.pwd
 
-repo = opts[:mirror] ? BT::Repository.mirror(repository) : BT::Repository.new(repository)
+if opts[:done_with]
+  BT::Repository.new(repository).destroy!
+else
+  repo = opts[:mirror] ? BT::Repository.mirror(repository) : BT::Repository.new(repository)
 
-repo.update
-repo.push
+  repo.update
+  repo.push
 
-puts repo.path
+  puts repo.path
+end

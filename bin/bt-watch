@@ -19,7 +19,6 @@ end
 repository = ARGV.shift || Dir.pwd
 
 EM.run {
-  Signal.trap('INT') { EM.stop }
 
   local = LocalRepository.new(repository)
 
@@ -51,5 +50,7 @@ EM.run {
   end
 
   local.sync
+
+  Signal.trap('INT') { local.remove; EM.stop }
 }
 

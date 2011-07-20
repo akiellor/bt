@@ -18,6 +18,10 @@ class LocalRepository
     EM.popen("#{find_command :sync} \"#{@path}\"", Process, @synchronised_callbacks)
   end
 
+  def remove
+    `#{find_command :sync} --done-with \"#{@path}\"`
+  end
+
   class Process < EM::Connection
     def initialize callbacks
       @callbacks = callbacks

@@ -1,5 +1,4 @@
 module BT
-
   require 'andand'
   require 'forwardable'
   require 'grit'
@@ -50,6 +49,15 @@ module BT
         m.configure_remote_fetch 'origin', "+#{Ref.prefix}/*:#{Ref.prefix}/*"
         yield m if block_given?
       end
+    end
+
+    def temporary?
+      Dir[File.join(Dir.tmpdir, '*')].include? path
+    end
+
+    def destroy!
+      temporary? or raise "Can't destroy a non-temporary repository"
+      FileUtils.rm_rf(@repo.path)
     end
 
     def working_tree commit = 'HEAD', &block
